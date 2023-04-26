@@ -12,7 +12,7 @@ from rl.memory import SequentialMemory
 
 ##CARTPOLE WORKING
 
-env = gym.make("CartPole-v1", render_mode="human")
+env = gym.make("CartPole-v1")
 
 states = env.observation_space.shape[0] #amount of states
 actions = env.action_space.n  #amount of actions
@@ -37,10 +37,10 @@ agent = DQNAgent(
 
 #Compile the model with the Adam optimizer
 agent.compile(Adam(lr=0.001), metrics=["mae"])
-agent.fit(env, nb_steps=1000, visualize=False, verbose=1)
+agent.fit(env, nb_steps=10000, visualize=False, verbose=1)
 
 #Evaluate agent
-results = agent.test(env, nb_episodes=1, visualize=True)
+results = agent.test(env, nb_episodes=10, visualize=True)
 print(np.mean(results.history["episode_reward"]))
 
 env.close()
