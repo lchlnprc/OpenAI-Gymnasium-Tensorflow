@@ -11,6 +11,7 @@ import io
 import base64
 from IPython.display import HTML
 from IPython import display as ipythondisplay
+from gym.wrappers import Monitor
 
 
 
@@ -218,7 +219,7 @@ def show_video():
         print("Could not find video")
 
 def wrap_env(env):
-    env = gym.wrappers.OrderEnforcing(env, disable_render_order_enforcing=True)
+    env = Monitor(env, 'video', force=True)
     return env
 
 # Evaluate model on OpenAI GYM
@@ -238,9 +239,9 @@ with tf.compat.v1.Session() as sess:
             action = np.argmax(actions, axis=-1)
             actions_counter[str(action)] += 1 
             action = epsilon_greedy(action, global_step)
-            env.render()
             observation = new_observation
             new_observation, reward, done, _ = env.step(action)
+            env.render(mode = 'human')
 
             if done: 
                 break
