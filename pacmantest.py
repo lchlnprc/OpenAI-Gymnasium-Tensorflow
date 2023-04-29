@@ -47,7 +47,7 @@ n_outputs = env.action_space.n
 
 
 #Define Parameters
-num_episodes = 1
+num_episodes = 200
 batch_size = 1
 input_shape = (None, 88, 80, 1) #Recall shape is img.reshape(88,80,1)
 learning_rate = 0.001
@@ -98,7 +98,7 @@ def epsilon_greedy(action, step):
     epsilon = max(eps_min, eps_max - (eps_max-eps_min) * step/eps_decay_steps) #Decaying policy with more steps  
     if np.random.rand() < epsilon:    
         return np.random.randint(n_outputs)  
-    else:    
+    else:   
         return int(action)  # Convert action to int before returning
 
     
@@ -200,29 +200,37 @@ with tf.compat.v1.Session() as sess:
             global_step += 1  
             episodic_reward += reward  
             history.append(episodic_reward)
-            print('Epochs per episode:', epoch, 'Episode Reward:', episodic_reward,'Episode number:', len(history))
+            #print('Epochs per episode:', epoch, 'Episode Reward:', episodic_reward,'Episode number:', len(history))
     plt.plot(history)
+    plt.title('Score over Episodes')
+    plt.xlabel('Episode')
+    plt.ylabel('Score')
     plt.show()
 
-# Utility functions to enable video recording of gym environment and displaying it
+
+
+"""
+Utility functions to enable video recording of gym environment and displaying it
+To enable video, just do "env = wrap_env(env)""
+"""
+
 def show_video():
-    mp4list = glob.glob('video/*.mp4')
-    if len(mp4list) > 0:
-        mp4 = mp4list[0]
-        video = io.open(mp4, 'r+b').read()
-        encoded = base64.b64encode(video)
-        ipythondisplay.display(HTML(data='''<video alt="test" autoplay 
-                    loop controls style="height: 400px;">
-                    <source src="data:video/mp4;base64,{0}" type="video/mp4" />
-                </video>'''.format(encoded.decode('ascii'))))
-    else: 
-        print("Could not find video")
+  mp4list = glob.glob('video/*.mp4')
+  if len(mp4list) > 0:
+    mp4 = mp4list[0]
+    video = io.open(mp4, 'r+b').read()
+    encoded = base64.b64encode(video)
+    ipythondisplay.display(HTML(data=''''''.format(encoded.decode('ascii'))))
+  else: 
+    print("Could not find video")
+    
 
 def wrap_env(env):
-    env = Monitor(env, 'video', force=True)
-    return env
+  env = Monitor(env, './video', force=True)
+  return env
+     
 
-# Evaluate model on OpenAI GYM
+#Evaluate model on openAi GYM
 env = wrap_env(gym.make('MsPacman-v0', render_mode = 'human'))
 observation = env.reset()
 new_observation = observation
@@ -234,17 +242,27 @@ with tf.compat.v1.Session() as sess:
     init.run()
     while True:
         if True: 
+            #env.render()
+            #set input to network to be difference image
             obs = preprocess_observation(observation)
+
+            # feed the game screen and get the Q values for each action
             actions = mainQ_outputs.eval(feed_dict={X:[obs], in_training_mode:False})
+    
+            # get the action
             action = np.argmax(actions, axis=-1)
             actions_counter[str(action)] += 1 
+    
+            # select the action using epsilon greedy policy
             action = epsilon_greedy(action, global_step)
-            observation = new_observation
+            
+            observation = new_observation        
+            # now perform the action and move to the next state, next_obs, receive reward
             new_observation, reward, done, _ = env.step(action)
-            env.render(mode = 'human')
-
+    
             if done: 
+                #observation = env.reset()
                 break
-
+      
     env.close()
-    show_video()
+    #show_video()
