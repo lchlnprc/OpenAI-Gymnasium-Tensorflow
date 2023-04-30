@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import polyfit, poly1d
 import gym
 import tensorflow as tf
 import tf_slim as slim
@@ -153,6 +154,7 @@ with tf.compat.v1.Session() as sess:
     # for each episode  
     history = []  
     for i in range(num_episodes):    
+        print('Episode Number: ', i) 
         done = False    
         obs = env.reset()    
         epoch = 0    
@@ -205,6 +207,13 @@ with tf.compat.v1.Session() as sess:
     plt.title('Score over Episodes')
     plt.xlabel('Episode')
     plt.ylabel('Score')
+
+    # Calculate trend line
+    x = np.arange(len(history))
+    coeffs = np.polyfit(x, history, 1)
+    trend_line = np.poly1d(coeffs)
+
+    plt.plot(x, trend_line(x), 'r-')  # Plot trend line in red
     plt.show()
 
 
