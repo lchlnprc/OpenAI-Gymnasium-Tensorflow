@@ -14,17 +14,17 @@ from rl.memory import SequentialMemory
 
 env = gym.make("CartPole-v1")
 
-states = env.observation_space.shape[0] 
-actions = env.action_space.n  
+states = env.observation_space.shape[0]
+actions = env.action_space.n
 
-model = Sequential() 
+model = Sequential()
 model.add(Flatten(input_shape=(1, states)))
 model.add(Dense(24, activation="relu"))
 model.add(Dense(24, activation="relu"))
 model.add(Dense(actions, activation="linear"))
 
 agent = DQNAgent(
-    model=model, 
+    model=model,
     memory=SequentialMemory(limit=50000, window_length=1),
     policy=BoltzmannQPolicy(),
     nb_actions=actions,
@@ -32,18 +32,26 @@ agent = DQNAgent(
     target_model_update=0.01
 )
 
-#Compile the model with the Adam optimizer
+# Compile the model with the Adam optimizer
 agent.compile(Adam(lr=0.001), metrics=["mae"])
-history = agent.fit(env, nb_steps=30000, visualize=False, verbose=1)
+history = agent.fit(env, nb_steps=100000, visualize=False, verbose=1)
 
 # Saving the rewards in a list
 reward_history = history.history["episode_reward"]
 
-#Evaluate agent
-results = agent.test(env, nb_episodes=10, visualize=True)
+# Select 10 random episodes to visualize
+visualize_episodes = np.random.choice(100, 10, replace=False)
+
+# Evaluate agent over 100 episodes
+total_rewards = []
+for i in range(100):
+    visualize = i in visualize_episodes
+    result = agent.test(env, nb_episodes=1, visualize=visualize)
+    total_reward = result.history['episode_reward'][0]
+    total_rewards.append(total_reward)
 
 # Print the average reward for the evaluation episodes
-avg_reward = np.mean(results.history["episode_reward"])
+avg_reward = np.mean(total_rewards)
 print(f'Average reward: {avg_reward}')
 
 # Plotting rewards
@@ -58,22 +66,3 @@ plt.legend()
 plt.show()
 
 env.close()
-
-
-
-
-#episodes = 10
-#for episode in range(1, episodes+1):
-#    state = env.reset()
-#    done = False
-#    score = 0
-#
-#    while not done:
-#        action = random.choice([0, 1])
-#        _, reward, done, _ = env.step(action)
-#        score += reward
-#        env.render()
-#
-#    print(f"Episode {episode}, Score: {score}")
-#
-#env.close()
