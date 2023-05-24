@@ -13,6 +13,15 @@ from rl.policy import BoltzmannQPolicy
 from rl.memory import SequentialMemory
 from rl.random import OrnsteinUhlenbeckProcess
 
+class MountainCarWrapper(gym.RewardWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+
+    def reward(self, reward):
+        position, velocity = self.state
+        reward += (position + 0.6) / 1.1  # Normalize position value to range [0, 1] and add to reward
+        return reward
+
 class RewardLogger(Callback):
     def __init__(self):
         self.episode_rewards = []
@@ -20,7 +29,8 @@ class RewardLogger(Callback):
     def on_episode_end(self, episode, logs={}):
         self.episode_rewards.append(logs.get('episode_reward'))
 
-env = gym.make("MountainCarContinuous-v0")
+env = MountainCarWrapper(gym.make("MountainCarContinuous-v0"))  # environment for training
+env_eval = gym.make("MountainCarContinuous-v0")  # environment for evaluation
 
 states = env.observation_space.shape[0]  # amount of states
 actions = env.action_space.shape[0]  # amount of actions
@@ -60,7 +70,7 @@ agent.compile(Adam(lr=0.001, clipnorm=1.), metrics=["mae"])
 reward_logger = RewardLogger()
 
 # Train the agent
-agent.fit(env, nb_steps=10000, visualize=False, verbose=1, callbacks=[reward_logger])
+agent.fit(env, nb_steps=100000, visualize=False, verbose=1, callbacks=[reward_logger])
 
 # Calculate slope and intercept for the trend line
 slope, intercept = np.polyfit(range(len(reward_logger.episode_rewards)), reward_logger.episode_rewards, 1)
@@ -75,7 +85,15 @@ plt.legend(['Reward', 'Trendline'], loc='upper left')
 plt.show()
 
 # Evaluate agent
-results = agent.test(env, nb_episodes=10, visualize=True)
-print(np.mean(results.history["episode_reward"]))
+episode_rewards = []
+for episode in range(100):
+    if episode < 10:
+        result = agent.test(env_eval, nb_episodes=1, visualize=True)  # visualize the first 10 episodes
+    else:
+        result = agent.test(env_eval, nb_episodes=1, visualize=False)  # do not visualize the rest
+    episode_rewards.append(result.history["episode_reward"][0])
+
+print("Average reward over 100 test episodes: ", np.mean(episode_rewards))
 
 env.close()
+env_eval.close()
